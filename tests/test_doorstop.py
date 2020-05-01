@@ -1,8 +1,8 @@
 """Test the pytest-doorstop plugin."""
-import pytest
-import doorstop
 import pathlib
+
 import git
+import pytest
 import yaml
 
 
