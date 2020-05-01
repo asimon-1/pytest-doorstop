@@ -201,3 +201,33 @@ def test_xpass_updates_attributes(testdir):
         == "d670460b4b4aece5915caf5c68d12f560a9fe3e4"
     )
     assert yaml_contents["test_result_latest"] == "xpass"
+
+
+def test_verbose(testdir):
+    """Check that the verbose option adds more information to the output."""
+    result = testdir.runpytest("--verbose", "--doorstop_prefix", "TST")
+    result.stdout.fnmatch_lines(
+        [
+            "Writing outcome (passed) for doorstop item *\\TstPlan\\TST0001.yml",
+            "Writing outcome (failed) for doorstop item *\\TstPlan\\TST0002.yml",
+            "Writing outcome (xfail) for doorstop item *\\TstPlan\\TST0004.yml",
+            "Writing outcome (xpass) for doorstop item *\\TstPlan\\TST0005.yml",
+        ]
+    )
+
+
+def test_missing_item(testdir):
+    """Check that tests without a Doorstop item are handled correctly."""
+    testdir.makepyfile(
+        """
+def test_missing():
+    assert True
+"""
+    )
+    result = testdir.runpytest("--doorstop_prefix", "TST")
+    assert "Writing outcome" not in result.stdout.str()
+
+    result_verbose = testdir.runpytest("--verbose", "--doorstop_prefix", "TST")
+    result_verbose.stdout.fnmatch_lines(
+        ["Could not locate a Doorstop item for test_missing_item.py::test_missing"]
+    )

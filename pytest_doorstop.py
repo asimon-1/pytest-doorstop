@@ -122,6 +122,10 @@ class DoorstopRecorder:
                 contents["test_result_latest"] = "xfail"
             elif outcome == "passed":
                 contents["test_result_latest"] = "xpass"
+        if self.config.option.verbose:
+            print(
+                f"""\nWriting outcome ({contents["test_result_latest"]}) for doorstop item {str(doorstop_item)}"""
+            )
         with doorstop_item.open("w") as f:
             yaml.safe_dump(contents, f)
 
@@ -134,5 +138,6 @@ class DoorstopRecorder:
                     xfail = "xfail" in report.keywords
                     self.record_outcome(doorstop_item, report.outcome, xfail)
                 except RuntimeWarning as e:
-                    # TODO: Print the warning if a verbose flag is passed
-                    pass
+                    if self.config.option.verbose:
+                        print("\n")
+                        print(e)
