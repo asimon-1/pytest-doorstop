@@ -41,6 +41,10 @@ class DoorstopRecorder:
     def __init__(self, config):
         self.config = config
 
+    def pytest_sessionstart(self, session) -> None:
+        """Perform setup activities at start of session."""
+        self.commit_hash = self.get_commit_hash()
+
     def get_commit_hash(self) -> str:
         """Return the full git hash for the current commit."""
         repo = git.Repo(search_parent_directories=True)
@@ -71,17 +75,17 @@ class DoorstopRecorder:
         raise RuntimeWarning(f"Could not locate a Doorstop item for {nodeid}")
 
     def record_outcome(
-        self, doorstop_item: pathlib.Path, outcome: str, commit_hash: str, xfail: bool
+        self, doorstop_item: pathlib.Path, outcome: str, xfail: bool
     ) -> None:
         """Write the outcome to the doorstop item."""
         # TODO: Use the doorstop API to write this --> item.set(key, value)
         with doorstop_item.open("r") as f:
             contents = yaml.safe_load(f)
-        contents["test_commit_latest"] = commit_hash
+        contents["test_commit_latest"] = self.commit_hash
         if not xfail:
             contents["test_result_latest"] = outcome
             if outcome == "passed":
-                contents["test_commit_last_passed"] = commit_hash
+                contents["test_commit_last_passed"] = self.commit_hash
         else:
             if outcome == "skipped":
                 contents["test_result_latest"] = "xfail"
@@ -98,12 +102,7 @@ class DoorstopRecorder:
                 try:
                     doorstop_item = self.get_doorstop_item(report.nodeid, document)
                     xfail = "xfail" in report.keywords
-                    commit_hash = (
-                        self.get_commit_hash()
-                    )  # TODO: Only call this once per session
-                    self.record_outcome(
-                        doorstop_item, report.outcome, commit_hash, xfail
-                    )
+                    self.record_outcome(doorstop_item, report.outcome, xfail)
                 except RuntimeWarning as e:
                     # TODO: Print the warning if a verbose flag is passed
                     pass
