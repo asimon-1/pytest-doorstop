@@ -1,16 +1,22 @@
-# TODO: Convert these tests from manual invocations to automated unit tests
+"""Test the pytest-doorstop plugin."""
 import pytest
 import doorstop
 import pathlib
 import git
+import yaml
 
 
 class Dummy:
+    """Attribute Container."""
+
     pass
 
 
 class MockRepo:
+    """Mock for git.Repo."""
+
     def __init__(self, *args, **kwargs):
+        """Mock for git.Repo().head.object.hexsha."""
         self.head = Dummy()
         self.head.object = Dummy()
         self.head.object.hexsha = "d670460b4b4aece5915caf5c68d12f560a9fe3e4"
@@ -18,6 +24,7 @@ class MockRepo:
 
 @pytest.fixture(autouse=True)
 def setup_tests(testdir, monkeypatch):
+    """Provide mock return values and example tests to run against."""
     monkeypatch.setattr(git, "Repo", MockRepo, raising=True)
     monkeypatch.setattr(
         pathlib.Path, "cwd", lambda: str(testdir),
@@ -109,6 +116,14 @@ def test_xpass():
     )
 
 
+def read_file(testdir, filename):
+    """Export the given test doorstop yaml file as dict."""
+    path = pathlib.Path(str(testdir)).joinpath("TstPlan").resolve().joinpath(filename)
+    with path.open("r") as f:
+        contents = yaml.safe_load(f)
+    return contents
+
+
 def test_example_tests(testdir):
     """Make sure the base tests run as expected."""
     result = testdir.runpytest()
@@ -126,3 +141,63 @@ def test_example_tests_with_path(testdir):
     path = str(pathlib.Path(str(testdir)).joinpath("TstPlan").resolve())
     result = testdir.runpytest("--doorstop_path", path)
     result.assert_outcomes(passed=1, failed=1, skipped=1, xpassed=1, xfailed=1)
+
+
+def test_pass_updates_attributes(testdir):
+    """Check that a passing test has its Doorstop attributes updated."""
+    testdir.runpytest("--doorstop_prefix", "TST")
+    yaml_contents = read_file(testdir, "TST0001.yml")
+    assert (
+        yaml_contents["test_commit_last_passed"]
+        == "d670460b4b4aece5915caf5c68d12f560a9fe3e4"
+    )
+    assert (
+        yaml_contents["test_commit_latest"]
+        == "d670460b4b4aece5915caf5c68d12f560a9fe3e4"
+    )
+    assert yaml_contents["test_result_latest"] == "passed"
+
+
+def test_fail_updates_attributes(testdir):
+    """Check that a failing test has its Doorstop attributes updated."""
+    testdir.runpytest("--doorstop_prefix", "TST")
+    yaml_contents = read_file(testdir, "TST0002.yml")
+    assert "test_commit_last_passed" not in yaml_contents
+    assert (
+        yaml_contents["test_commit_latest"]
+        == "d670460b4b4aece5915caf5c68d12f560a9fe3e4"
+    )
+    assert yaml_contents["test_result_latest"] == "failed"
+
+
+def test_skip_updates_attributes(testdir):
+    """Check that a skipped test does not have its Doorstop attributes updated."""
+    testdir.runpytest("--doorstop_prefix", "TST")
+    yaml_contents = read_file(testdir, "TST0003.yml")
+    assert "test_commit_last_passed" not in yaml_contents
+    assert "test_commit_latest" not in yaml_contents
+    assert "test_result_latest" not in yaml_contents
+
+
+def test_xfail_updates_attributes(testdir):
+    """Check that an xfailing test has its Doorstop attributes updated."""
+    testdir.runpytest("--doorstop_prefix", "TST")
+    yaml_contents = read_file(testdir, "TST0004.yml")
+    assert "test_commit_last_passed" not in yaml_contents
+    assert (
+        yaml_contents["test_commit_latest"]
+        == "d670460b4b4aece5915caf5c68d12f560a9fe3e4"
+    )
+    assert yaml_contents["test_result_latest"] == "xfail"
+
+
+def test_xpass_updates_attributes(testdir):
+    """Check that an xpassing test has its Doorstop attributes updated."""
+    testdir.runpytest("--doorstop_prefix", "TST")
+    yaml_contents = read_file(testdir, "TST0005.yml")
+    assert "test_commit_last_passed" not in yaml_contents
+    assert (
+        yaml_contents["test_commit_latest"]
+        == "d670460b4b4aece5915caf5c68d12f560a9fe3e4"
+    )
+    assert yaml_contents["test_result_latest"] == "xpass"
