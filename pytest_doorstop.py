@@ -21,6 +21,7 @@ def pytest_addoption(parser):
 
 
 def pytest_configure(config):
+    """Register the plugin."""
     if not config.option.doorstop_document:
         return
     else:
@@ -31,6 +32,7 @@ def pytest_configure(config):
 
 
 def pytest_unconfigure(config):
+    """Unregister the plugin."""
     plugin = getattr(config, "doorstop", None)
     if plugin is not None:
         del config.doorstop
@@ -38,29 +40,42 @@ def pytest_unconfigure(config):
 
 
 class DoorstopRecorder:
+    """Record test results in a Doorstop document."""
+
     def __init__(self, config):
+        """Set config and tree."""
         self.config = config
+        self.tree = doorstop.build()
 
     def pytest_sessionstart(self, session) -> None:
         """Perform setup activities at start of session."""
         self.commit_hash = self.get_commit_hash()
-        self.document = self.get_document(self.config)
+        self.document = self.get_document()
 
     def get_commit_hash(self) -> str:
         """Return the full git hash for the current commit."""
         repo = git.Repo(search_parent_directories=True)
         return repo.head.object.hexsha
 
-    def get_document(self, config) -> pathlib.Path:
+    def get_document(self) -> pathlib.Path:
         """Convert commandline argument to a pathlib object."""
-        # TODO: Use the doorstop API to find this
-        # doorstop.build().find_document(docprefix)
-        doorstop_document = pathlib.Path(config.getoption("doorstop_document"))
-        if doorstop_document.exists():
-            return doorstop_document
-        raise RuntimeError(
-            f"Could not locate the Doorstop document '{doorstop_document}'"
-        )
+        option = self.config.getoption("doorstop_document")
+        try:
+            # Find the Doorstop document with user-specified prefix
+            doc = self.tree.find_document(option)
+            doorstop_document = pathlib.Path(doc.path)
+        except doorstop.common.DoorstopError:
+            # Try to find a Doorstop document with user-specified path
+            docs = self.tree.documents
+            path = pathlib.Path(option).resolve()
+            paths = [pathlib.Path(doc.path) for doc in docs]
+            if path in paths:
+                doorstop_document = path
+            else:
+                raise RuntimeError(
+                    f"Could not locate a Doorstop document with prefix or path: {option}"
+                )
+        return doorstop_document
 
     def get_doorstop_item(self, nodeid: str) -> pathlib.Path:
         """Search for the doorstop item that contains the test."""
