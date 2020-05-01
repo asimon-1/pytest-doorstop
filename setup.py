@@ -24,7 +24,7 @@ setup(
     long_description=read("README.md"),
     py_modules=["pytest_doorstop"],
     python_requires=">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*",
-    install_requires=["pytest>=3.5.0"],
+    install_requires=["pytest>=3.5.0", "doorstop>=2", "PyYAML>=5" "gitpython>=3"],
     classifiers=[
         "Development Status :: 4 - Beta",
         "Framework :: Pytest",
