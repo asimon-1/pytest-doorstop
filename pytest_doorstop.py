@@ -10,18 +10,29 @@ def pytest_addoption(parser):
     """Add parser argument for doorstop document."""
     group = parser.getgroup("doorstop", "mark doorstop items with test results")
     group._addoption(
-        "--doorstop_document",
+        "--doorstop_prefix",
         action="store",
-        dest="doorstop_document",
+        dest="doorstop_prefix",
         type=str,
-        default=None,
-        help="Location of the doorstop items",
+        help="Prefix for the test items",
+    )
+
+    group._addoption(
+        "--doorstop_path",
+        action="store",
+        dest="doorstop_path",
+        type=str,
+        default=str(pathlib.Path.cwd()),
+        help="Location of the doorstop test items",
     )
 
 
 def pytest_configure(config):
     """Register the plugin."""
-    if not config.option.doorstop_document:
+    if not (
+        config.option.doorstop_prefix
+        or (config.option.doorstop_path != str(pathlib.Path.cwd()))
+    ):
         return
     else:
         Plugin = DoorstopRecorder
@@ -44,7 +55,21 @@ class DoorstopRecorder:
     def __init__(self, config):
         """Set config and tree."""
         self.config = config
-        self.tree = doorstop.build()
+        self.tree = doorstop.build(root=config.option.doorstop_path)
+
+        # Check that there is at least one document in the tree
+        if not self.tree.documents:
+            # Try to build a tree using each first-level child of the path
+            children = list(pathlib.Path(config.option.doorstop_path).glob("*"))
+            while children:
+                path = children.pop()
+                self.tree = doorstop.build(root=path)
+                if self.tree.documents:
+                    break
+            else:
+                raise RuntimeError(
+                    f"Could not find a Doorstop document in the path {config.option.doorstop_path} or its children."
+                )
 
     def pytest_sessionstart(self, session) -> None:
         """Perform setup activities at start of session."""
@@ -58,22 +83,13 @@ class DoorstopRecorder:
 
     def get_document(self) -> pathlib.Path:
         """Convert commandline argument to a pathlib object."""
-        option = self.config.getoption("doorstop_document")
-        try:
-            # Find the Doorstop document with user-specified prefix
-            doc = self.tree.find_document(option)
+        # Find the Doorstop document with user-specified prefix
+        if self.config.option.doorstop_prefix:
+            doc = self.tree.find_document(self.config.option.doorstop_prefix)
             doorstop_document = pathlib.Path(doc.path)
-        except doorstop.common.DoorstopError:
+        else:
             # Try to find a Doorstop document with user-specified path
-            docs = self.tree.documents
-            path = pathlib.Path(option).resolve()
-            paths = [pathlib.Path(doc.path) for doc in docs]
-            if path in paths:
-                doorstop_document = path
-            else:
-                raise RuntimeError(
-                    f"Could not locate a Doorstop document with prefix or path: {option}"
-                )
+            doorstop_document = pathlib.Path(self.config.option.doorstop_path).resolve()
         return doorstop_document
 
     def get_doorstop_item(self, nodeid: str) -> pathlib.Path:
@@ -109,7 +125,7 @@ class DoorstopRecorder:
         with doorstop_item.open("w") as f:
             yaml.safe_dump(contents, f)
 
-    def pytest_report_teststatus(self, report, config) -> None:
+    def pytest_runtest_logreport(self, report) -> None:
         """Collect test status and record in the doorstop item if appropriate."""
         if self.document:
             if report.when == "call":
