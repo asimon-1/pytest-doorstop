@@ -19,30 +19,33 @@ def pytest_addoption(parser):
     )
 
 
-def get_commit_hash():
+def get_commit_hash() -> str:
     """Return the full git hash for the current commit."""
     repo = git.Repo(search_parent_directories=True)
     return repo.head.object.hexsha
 
 
-def get_document(config):
+def get_document(config) -> pathlib.Path:
     """Convert commandline argument to a pathlib object."""
-    if config.getoption("doorstop_document"):
-        return pathlib.Path(config.getoption("doorstop_document"))
-    return None
+    doorstop_document = config.getoption("doorstop_document")
+    if doorstop_document:
+        return pathlib.Path(doorstop_document)
+    raise RuntimeError(f"Could not locate the Doorstop document {doorstop_document}")
 
 
-def get_doorstop_item(nodeid, document):
+def get_doorstop_item(nodeid: str, document: pathlib.Path) -> pathlib.Path:
     """Search for the doorstop item that contains the test."""
     # TODO: Requires that the test function name be unique. Add in filename too?
     # TODO: Incorporate new array behavior
+    test_name = nodeid.split("::")[-1]
     for path in document.iterdir():
-        if nodeid.split("::")[-1] in path.read_text():
+        if test_name in path.read_text():
             # TODO: Is reading from yaml more appropriate?
             return path
+    raise RuntimeWarning(f"Could not locate a Doorstop item for {nodeid}")
 
 
-def record_outcome(doorstop_item, outcome, commit_hash, xfail):
+def record_outcome(doorstop_item: pathlib.Path, outcome: str, commit_hash: str, xfail: bool) -> None:
     """Write the outcome to the doorstop item."""
     with doorstop_item.open("r") as f:
         contents = yaml.safe_load(f)
@@ -60,7 +63,7 @@ def record_outcome(doorstop_item, outcome, commit_hash, xfail):
         yaml.safe_dump(contents, f)
 
 
-def pytest_report_teststatus(report, config):
+def pytest_report_teststatus(report, config) -> None:
     """Collect test status and record in the doorstop item if appropriate."""
     document = get_document(config)
     if document:
