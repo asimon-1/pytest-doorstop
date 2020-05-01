@@ -3,7 +3,6 @@ import pathlib
 
 import doorstop
 import git
-import pytest
 import yaml
 
 
