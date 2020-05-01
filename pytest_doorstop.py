@@ -44,6 +44,7 @@ class DoorstopRecorder:
     def pytest_sessionstart(self, session) -> None:
         """Perform setup activities at start of session."""
         self.commit_hash = self.get_commit_hash()
+        self.document = self.get_document(self.config)
 
     def get_commit_hash(self) -> str:
         """Return the full git hash for the current commit."""
@@ -54,21 +55,21 @@ class DoorstopRecorder:
         """Convert commandline argument to a pathlib object."""
         # TODO: Use the doorstop API to find this
         # doorstop.build().find_document(docprefix)
-        doorstop_document = config.getoption("doorstop_document")
-        if doorstop_document:
-            return pathlib.Path(doorstop_document)
+        doorstop_document = pathlib.Path(config.getoption("doorstop_document"))
+        if doorstop_document.exists():
+            return doorstop_document
         raise RuntimeError(
-            f"Could not locate the Doorstop document {doorstop_document}"
+            f"Could not locate the Doorstop document '{doorstop_document}'"
         )
 
-    def get_doorstop_item(self, nodeid: str, document: pathlib.Path) -> pathlib.Path:
+    def get_doorstop_item(self, nodeid: str) -> pathlib.Path:
         """Search for the doorstop item that contains the test."""
         # TODO: Use the doorstop API to find this --> document.items
         # TODO: Implement caching to avoid searching the entire tree for each test
         # TODO: Requires that the test function name be unique. Add in filename too?
         # TODO: Incorporate new array behavior
         test_name = nodeid.split("::")[-1]
-        for path in document.iterdir():
+        for path in self.document.iterdir():
             if test_name in path.read_text():
                 # TODO: Is reading from yaml more appropriate?
                 return path
@@ -96,11 +97,10 @@ class DoorstopRecorder:
 
     def pytest_report_teststatus(self, report, config) -> None:
         """Collect test status and record in the doorstop item if appropriate."""
-        document = self.get_document(config)
-        if document:
+        if self.document:
             if report.when == "call":
                 try:
-                    doorstop_item = self.get_doorstop_item(report.nodeid, document)
+                    doorstop_item = self.get_doorstop_item(report.nodeid)
                     xfail = "xfail" in report.keywords
                     self.record_outcome(doorstop_item, report.outcome, xfail)
                 except RuntimeWarning as e:
