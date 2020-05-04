@@ -22,6 +22,7 @@ setup(
     url="https://github.com/scuriosity/pytest-doorstop",
     description="A pytest plugin for adding test results into doorstop items.",
     long_description=read("README.md"),
+    long_description_content_type='text/markdown',
     py_modules=["pytest_doorstop"],
     python_requires=">=3.7",
     install_requires=["pytest>=3.5.0", "doorstop>=2", "PyYAML>=5" "gitpython>=3"],
