@@ -1,10 +1,10 @@
 # pytest-doorstop
 
 
-![image](https://img.shields.io/pypi/v/pytest-doorstop.svg%0A%20:target:%20https://pypi.org/project/pytest-doorstop%0A%20:alt:%20PyPI%20version)
-
-![image](https://img.shields.io/pypi/pyversions/pytest-doorstop.svg%0A%20:target:%20https://pypi.org/project/pytest-doorstop%0A%20:alt:%20Python%20versions)
-
+![PyPI Version](https://img.shields.io/pypi/v/pytest-doorstop)
+![PyPI - Python Version](https://img.shields.io/pypi/pyversions/pytest-doorstop)
+![PyPI - License](https://img.shields.io/pypi/l/pytest-doorstop)
+![Sonarcloud](https://img.shields.io/sonar/quality_gate/scuriosity_pytest-doorstop?server=https%3A%2F%2Fsonarcloud.io)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
 A pytest plugin for adding test results into doorstop items.
