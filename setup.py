@@ -2,13 +2,11 @@
 # -*- coding: utf-8 -*-
 
 import os
-import codecs
 from setuptools import setup
 
-
-def read(fname):
-    file_path = os.path.join(os.path.dirname(__file__), fname)
-    return codecs.open(file_path, encoding="utf-8").read()
+this_directory = os.path.abspath(os.path.dirname(__file__))
+with open(os.path.join(this_directory, "README.md"), encoding="utf-8") as f:
+    long_description = f.read()
 
 
 setup(
@@ -21,8 +19,8 @@ setup(
     license="GNU GPL v3.0",
     url="https://github.com/scuriosity/pytest-doorstop",
     description="A pytest plugin for adding test results into doorstop items.",
-    long_description=read("README.md"),
-    long_description_content_type='text/markdown',
+    long_description=long_description,
+    long_description_content_type="text/markdown",
     py_modules=["pytest_doorstop"],
     python_requires=">=3.7",
     install_requires=["pytest>=3.5.0", "doorstop>=2", "PyYAML>=5" "gitpython>=3"],
