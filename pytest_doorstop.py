@@ -95,14 +95,9 @@ class DoorstopRecorder:
 
     def get_doorstop_item(self, nodeid: str) -> pathlib.Path:
         """Search for the doorstop item that contains the test."""
-        # TODO: Use the doorstop API to find this --> document.items
-        # TODO: Implement caching to avoid searching the entire tree for each test
-        # TODO: Requires that the test function name be unique. Add in filename too?
-        # TODO: Incorporate new array behavior
         test_name = nodeid.split("::")[-1]
         for path in self.document.iterdir():
             if test_name in path.read_text():
-                # TODO: Is reading from yaml more appropriate?
                 return path
         raise RuntimeWarning(f"Could not locate a Doorstop item for {nodeid}")
 
@@ -110,7 +105,6 @@ class DoorstopRecorder:
         self, doorstop_item: pathlib.Path, outcome: str, xfail: bool
     ) -> None:
         """Write the outcome to the doorstop item."""
-        # TODO: Use the doorstop API to write this --> item.set(key, value)
         with doorstop_item.open("r") as f:
             contents = yaml.safe_load(f)
         contents["test_commit_latest"] = self.commit_hash
