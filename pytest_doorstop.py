@@ -68,7 +68,8 @@ class DoorstopRecorder:
                     break
             else:
                 raise RuntimeError(
-                    f"Could not find a Doorstop document in the path {config.option.doorstop_path} or its children."
+                    f"Could not find a Doorstop document in the path "
+                    f"{config.option.doorstop_path} or its children."
                 )
 
     def pytest_sessionstart(self, session) -> None:
@@ -124,7 +125,8 @@ class DoorstopRecorder:
                 contents["test_result_latest"] = "xpass"
         if self.config.option.verbose:
             print(
-                f"""\nWriting outcome ({contents["test_result_latest"]}) for doorstop item {str(doorstop_item)}"""
+                f"""\nWriting outcome ({contents["test_result_latest"]})"""
+                """ for doorstop item {str(doorstop_item)}"""
             )
         with doorstop_item.open("w") as f:
             yaml.safe_dump(contents, f)

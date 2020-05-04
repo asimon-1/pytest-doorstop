@@ -23,7 +23,7 @@ setup(
     description="A pytest plugin for adding test results into doorstop items.",
     long_description=read("README.md"),
     py_modules=["pytest_doorstop"],
-    python_requires=">=3.6",
+    python_requires=">=3.7",
     install_requires=["pytest>=3.5.0", "doorstop>=2", "PyYAML>=5" "gitpython>=3"],
     classifiers=[
         "Development Status :: 4 - Beta",
@@ -32,8 +32,8 @@ setup(
         "Topic :: Software Development :: Testing",
         "Programming Language :: Python",
         "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
+        "Programming Language :: Python :: 3.8",
         "Operating System :: OS Independent",
         "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
     ],
