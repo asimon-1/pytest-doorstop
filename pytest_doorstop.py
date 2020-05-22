@@ -120,7 +120,7 @@ class DoorstopRecorder:
         if self.config.option.verbose:
             print(
                 f"""\nWriting outcome ({contents["test_result_latest"]})"""
-                """ for doorstop item {str(doorstop_item)}"""
+                f""" for doorstop item {str(doorstop_item)}"""
             )
         with doorstop_item.open("w") as f:
             yaml.safe_dump(contents, f)
