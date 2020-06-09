@@ -96,9 +96,17 @@ class DoorstopRecorder:
     def get_doorstop_item(self, nodeid: str) -> pathlib.Path:
         """Search for the doorstop item that contains the test."""
         test_name = nodeid.split("::")[-1]
-        for path in self.document.iterdir():
-            if test_name in path.read_text():
-                return path
+        for item in self.tree.document.items:
+            if test_name in item.ref:
+                # Deprecated behavior as of Doorstop v2.0
+                return pathlib.Path(item.path)
+            else:
+                # Array behavior
+                if item.references:
+                    for ref in item.references:
+                        for val in ref.values():
+                            if test_name in val:
+                                return pathlib.Path(item.path)
         raise RuntimeWarning(f"Could not locate a Doorstop item for {nodeid}")
 
     def record_outcome(
