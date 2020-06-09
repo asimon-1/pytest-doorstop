@@ -11,7 +11,7 @@ with open(os.path.join(this_directory, "README.md"), encoding="utf-8") as f:
 
 setup(
     name="pytest-doorstop",
-    version="0.1.0",
+    version="1.0.0",
     author="Andrew Simon",
     author_email="asimon1@protonmail.com",
     maintainer="Andrew Simon",
