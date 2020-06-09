@@ -104,6 +104,7 @@ class DoorstopRecorder:
         test_name = nodeid.split("::")[-1]
         for item in self.document.items:
             if type(item.references) is list:
+                # Use uncommon separator to avoid unintentional concatenation
                 refs = "`".join(
                     itertools.chain.from_iterable(
                         [ref.values() for ref in item.references]
