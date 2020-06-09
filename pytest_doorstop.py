@@ -4,7 +4,6 @@ import itertools
 
 import doorstop
 import git
-import yaml
 
 
 def pytest_addoption(parser):
@@ -94,7 +93,7 @@ class DoorstopRecorder:
             doorstop_document = pathlib.Path(self.config.option.doorstop_path).resolve()
         return doorstop_document
 
-    def get_doorstop_item(self, nodeid: str) -> pathlib.Path:
+    def get_doorstop_item(self, nodeid: str) -> doorstop.Item:
         """Search for the doorstop item that contains the test."""
         test_name = nodeid.split("::")[-1]
         for item in self.tree.document.items:
@@ -107,32 +106,28 @@ class DoorstopRecorder:
             else:
                 refs = str(item.ref)
             if test_name in refs:
-                return pathlib.Path(item.path)
+                return item
         raise RuntimeWarning(f"Could not locate a Doorstop item for {nodeid}")
 
     def record_outcome(
-        self, doorstop_item: pathlib.Path, outcome: str, xfail: bool
+        self, doorstop_item: doorstop.Item, outcome: str, xfail: bool
     ) -> None:
         """Write the outcome to the doorstop item."""
-        with doorstop_item.open("r") as f:
-            contents = yaml.safe_load(f)
-        contents["test_commit_latest"] = self.commit_hash
+        doorstop_item.set("test_commit_latest", self.commit_hash)
         if not xfail:
-            contents["test_result_latest"] = outcome
+            doorstop_item.set("test_result_latest", outcome)
             if outcome == "passed":
-                contents["test_commit_last_passed"] = self.commit_hash
+                doorstop_item.set("test_commit_last_passed", self.commit_hash)
         else:
             if outcome == "skipped":
-                contents["test_result_latest"] = "xfail"
+                doorstop_item.set("test_result_latest", "xfail")
             elif outcome == "passed":
-                contents["test_result_latest"] = "xpass"
+                doorstop_item.set("test_result_latest", "xpass")
         if self.config.option.verbose:
             print(
-                f"""\nWriting outcome ({contents["test_result_latest"]})"""
-                f""" for doorstop item {str(doorstop_item)}"""
+                f"""\nWriting outcome ({doorstop_item.get("test_result_latest")})"""
+                f""" for doorstop item {str(doorstop_item.uid)}"""
             )
-        with doorstop_item.open("w") as f:
-            yaml.safe_dump(contents, f)
 
     def pytest_runtest_logreport(self, report) -> None:
         """Collect test status and record in the doorstop item if appropriate."""
