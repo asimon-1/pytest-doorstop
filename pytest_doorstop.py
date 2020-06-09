@@ -4,7 +4,6 @@ import itertools
 
 import doorstop
 import git
-import yaml
 
 
 def pytest_addoption(parser):
@@ -83,22 +82,29 @@ class DoorstopRecorder:
         repo = git.Repo(search_parent_directories=True)
         return repo.head.object.hexsha
 
-    def get_document(self) -> pathlib.Path:
-        """Convert commandline argument to a pathlib object."""
+    def get_document(self) -> doorstop.Document:
+        """Convert commandline argument to a document object."""
         # Find the Doorstop document with user-specified prefix
         if self.config.option.doorstop_prefix:
-            doc = self.tree.find_document(self.config.option.doorstop_prefix)
-            doorstop_document = pathlib.Path(doc.path)
+            doorstop_document = self.tree.find_document(
+                self.config.option.doorstop_prefix
+            )
         else:
             # Try to find a Doorstop document with user-specified path
-            doorstop_document = pathlib.Path(self.config.option.doorstop_path).resolve()
+            provided_path = pathlib.Path(self.config.option.doorstop_path).resolve()
+            for doc in self.tree.documents:
+                doc_path = pathlib.Path(doc.path).resolve()
+                if provided_path == doc_path:
+                    doorstop_document = doc
+                    break
         return doorstop_document
 
-    def get_doorstop_item(self, nodeid: str) -> pathlib.Path:
+    def get_doorstop_item(self, nodeid: str) -> doorstop.Item:
         """Search for the doorstop item that contains the test."""
         test_name = nodeid.split("::")[-1]
-        for item in self.tree.document.items:
+        for item in self.document.items:
             if type(item.references) is list:
+                # Use uncommon separator to avoid unintentional concatenation
                 refs = "`".join(
                     itertools.chain.from_iterable(
                         [ref.values() for ref in item.references]
@@ -107,42 +113,37 @@ class DoorstopRecorder:
             else:
                 refs = str(item.ref)
             if test_name in refs:
-                return pathlib.Path(item.path)
+                return item
         raise RuntimeWarning(f"Could not locate a Doorstop item for {nodeid}")
 
     def record_outcome(
-        self, doorstop_item: pathlib.Path, outcome: str, xfail: bool
+        self, doorstop_item: doorstop.Item, outcome: str, xfail: bool
     ) -> None:
         """Write the outcome to the doorstop item."""
-        with doorstop_item.open("r") as f:
-            contents = yaml.safe_load(f)
-        contents["test_commit_latest"] = self.commit_hash
+        doorstop_item.set("test_commit_latest", self.commit_hash)
         if not xfail:
-            contents["test_result_latest"] = outcome
+            doorstop_item.set("test_result_latest", outcome)
             if outcome == "passed":
-                contents["test_commit_last_passed"] = self.commit_hash
+                doorstop_item.set("test_commit_last_passed", self.commit_hash)
         else:
             if outcome == "skipped":
-                contents["test_result_latest"] = "xfail"
+                doorstop_item.set("test_result_latest", "xfail")
             elif outcome == "passed":
-                contents["test_result_latest"] = "xpass"
+                doorstop_item.set("test_result_latest", "xpass")
         if self.config.option.verbose:
             print(
-                f"""\nWriting outcome ({contents["test_result_latest"]})"""
-                f""" for doorstop item {str(doorstop_item)}"""
+                f"""\nWriting outcome ({doorstop_item.get("test_result_latest")})"""
+                f""" for doorstop item {str(doorstop_item.uid)}"""
             )
-        with doorstop_item.open("w") as f:
-            yaml.safe_dump(contents, f)
 
     def pytest_runtest_logreport(self, report) -> None:
         """Collect test status and record in the doorstop item if appropriate."""
-        if self.document:
-            if report.when == "call":
-                try:
-                    doorstop_item = self.get_doorstop_item(report.nodeid)
-                    xfail = "xfail" in report.keywords
-                    self.record_outcome(doorstop_item, report.outcome, xfail)
-                except RuntimeWarning as e:
-                    if self.config.option.verbose:
-                        print("\n")
-                        print(e)
+        if self.document and report.when == "call":
+            try:
+                doorstop_item = self.get_doorstop_item(report.nodeid)
+                xfail = "xfail" in report.keywords
+                self.record_outcome(doorstop_item, report.outcome, xfail)
+            except RuntimeWarning as e:
+                if self.config.option.verbose:
+                    print("\n")
+                    print(e)

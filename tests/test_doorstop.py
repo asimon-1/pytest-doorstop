@@ -208,10 +208,10 @@ def test_verbose(testdir):
     result = testdir.runpytest("--verbose", "--doorstop_prefix", "TST")
     result.stdout.fnmatch_lines(
         [
-            "Writing outcome (passed) for doorstop item *\\TstPlan\\TST0001.yml",
-            "Writing outcome (failed) for doorstop item *\\TstPlan\\TST0002.yml",
-            "Writing outcome (xfail) for doorstop item *\\TstPlan\\TST0004.yml",
-            "Writing outcome (xpass) for doorstop item *\\TstPlan\\TST0005.yml",
+            "Writing outcome (passed) for doorstop item TST0001",
+            "Writing outcome (failed) for doorstop item TST0002",
+            "Writing outcome (xfail) for doorstop item TST0004",
+            "Writing outcome (xpass) for doorstop item TST0005",
         ]
     )
 

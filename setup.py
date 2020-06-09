@@ -23,7 +23,7 @@ setup(
     long_description_content_type="text/markdown",
     py_modules=["pytest_doorstop"],
     python_requires=">=3.7",
-    install_requires=["pytest>=3.5.0", "doorstop>=2", "PyYAML>=5" "gitpython>=3"],
+    install_requires=["pytest>=3.5.0", "doorstop>=2", "gitpython>=3"],
     classifiers=[
         "Development Status :: 4 - Beta",
         "Framework :: Pytest",
