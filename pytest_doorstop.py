@@ -1,5 +1,6 @@
 """Plug to record test results in a Doorstop document."""
 import pathlib
+import itertools
 
 import doorstop
 import git
@@ -96,9 +97,17 @@ class DoorstopRecorder:
     def get_doorstop_item(self, nodeid: str) -> pathlib.Path:
         """Search for the doorstop item that contains the test."""
         test_name = nodeid.split("::")[-1]
-        for path in self.document.iterdir():
-            if test_name in path.read_text():
-                return path
+        for item in self.tree.document.items:
+            if type(item.references) is list:
+                refs = "`".join(
+                    itertools.chain.from_iterable(
+                        [ref.values() for ref in item.references]
+                    )
+                )
+            else:
+                refs = str(item.ref)
+            if test_name in refs:
+                return pathlib.Path(item.path)
         raise RuntimeWarning(f"Could not locate a Doorstop item for {nodeid}")
 
     def record_outcome(

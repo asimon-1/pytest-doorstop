@@ -4,6 +4,9 @@ header: ''
 level: 1.2
 links: []
 normative: true
-ref: test_fail
+references:
+  - path: tests/test_doorstop.py
+    type: file
+    keyword: test_fail
 reviewed: 0fO_HRs-HZJfr_L0veM-DMGh6fonEqcbCPq7qkVvoNc=
 text: ''
